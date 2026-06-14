@@ -3,6 +3,7 @@ import api from "../api/axios";
 import useAuthStore from "../store/authStore";
 import { useNavigate } from "react-router-dom";
 import DeepKalaLogo from "../assets/DeepKalaMandirLogo.jpeg";
+import axios from "axios";
 
 // Inline styles to avoid Tailwind conflicts for animation-heavy elements
 const styles = `
@@ -363,7 +364,7 @@ export default function LoginPage() {
               className="splash-logo"
             />
           </div>
-          <p className="splash-tagline">दीप कला मंदिर</p>
+          <p className="splash-tagline">दिप कला मंदिर</p>
           <p className="splash-sub">Ganpati Karkhana</p>
         </div>
       )}
@@ -379,7 +380,7 @@ export default function LoginPage() {
                 alt="Deep Kala Mandir"
                 className="form-logo-img"
               />
-              <p className="form-org-name">दीप कला मंदिर</p>
+              <p className="form-org-name">दिप कला मंदिर</p>
               <p className="form-org-sub">Ganpati Karkhana</p>
             </div>
 
