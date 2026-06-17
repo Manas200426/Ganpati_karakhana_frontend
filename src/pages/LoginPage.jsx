@@ -334,15 +334,17 @@ export default function LoginPage() {
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       setLoading(true);
       const response = await api.post("/auth/login", formData);
       setAuth(response.data.data);
-      navigate("/");
+      toast.success("Login successful! Redirecting...");
+      setTimeout(() => navigate("/"), 1000);
     } catch (error) {
-      alert(error.response?.data?.message || "Login failed");
+      const errorMessage = error.response?.data?.message || "Login failed. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
