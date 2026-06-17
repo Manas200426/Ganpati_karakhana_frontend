@@ -1,16 +1,20 @@
-import { HashRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Toaster } from "sonner";
 
 import LoginPage from "./pages/LoginPage";
+
 import DashboardPage from "./pages/DashboardPage";
+
 import ProtectedRoute from "./routes/ProtectedRoute";
 import CustomersPage from "./pages/CustomersPage";
 import MainLayout from "./layouts/MainLayout";
 import OrdersPage from "./pages/OrdersPage";
 import OrderDetailsPage from "./pages/OrderDetailsPage";
-
 export default function App() {
   return (
-    <HashRouter>
+    <>
+      <Toaster position="top-right" richColors />
+      <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 
@@ -28,6 +32,7 @@ export default function App() {
           <Route path="orders/:id" element={<OrderDetailsPage />} />
         </Route>
       </Routes>
-    </HashRouter>
+      </BrowserRouter>
+    </>
   );
 }
