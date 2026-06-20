@@ -3,6 +3,7 @@ import api from "../api/axios";
 import useAuthStore from "../store/authStore";
 import { useNavigate } from "react-router-dom";
 import DeepKalaLogo from "../assets/DeepKalaMandirLogo.jpeg";
+import { toast } from "sonner";
 import axios from "axios";
 
 // Inline styles to avoid Tailwind conflicts for animation-heavy elements
@@ -341,6 +342,8 @@ const handleSubmit = async (e) => {
       const response = await api.post("/auth/login", formData);
       setAuth(response.data.data);
       toast.success("Login successful! Redirecting...");
+      console.log("response", response.data);
+      console.log("store before navigate", useAuthStore.getState());
       setTimeout(() => navigate("/"), 1000);
     } catch (error) {
       const errorMessage = error.response?.data?.message || "Login failed. Please try again.";
