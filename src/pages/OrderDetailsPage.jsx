@@ -1,7 +1,6 @@
-﻿import { useParams, useNavigate } from "react-router-dom";
-
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-
+import { useState } from "react";
 import {
   User,
   Phone,
@@ -14,15 +13,16 @@ import {
   Layers,
   ArrowLeft,
   MessageCircle,
+  Camera,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { getOrderById } from "../api/orderApi";
 import api from "../api/axios";
-import { toast } from "sonner";
-import { useState } from "react";
-
 import StatusBadge from "../components/StatusBadge";
 import UpdateStatusSelect from "../components/UpdateStatusSelect";
+import PhotoGallery from "../components/photos/PhotoGallery";
+import PhotoUploader from "../components/photos/PhotoUploader";
 
 function InfoRow({ icon: Icon, label, value }) {
   return (
@@ -42,17 +42,44 @@ function InfoRow({ icon: Icon, label, value }) {
   );
 }
 
-function SectionCard({ title, children }) {
+function SectionCard({ title, children, action }) {
   return (
     <div className="bg-(--color-surface) border border-(--color-border) rounded-2xl shadow-sm overflow-hidden">
       {title && (
-        <div className="px-5 py-4 border-b border-(--color-border) flex items-center gap-2">
-          <div className="w-1 h-4 bg-(--color-primary) rounded-full" />
-          <h2 className="font-semibold text-(--color-text)">{title}</h2>
+        <div className="px-5 py-4 border-b border-(--color-border) flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="w-1 h-4 bg-(--color-primary) rounded-full" />
+            <h2 className="font-semibold text-(--color-text)">{title}</h2>
+          </div>
+          {action}
         </div>
       )}
       <div className="p-5">{children}</div>
     </div>
+  );
+}
+
+function MurtiPhotoSection({ item, orderId }) {
+  return (
+    <SectionCard
+      title={`Photos — ${item.murtiName || "Murti"}`}
+      action={
+        <div className="flex items-center gap-1.5 text-xs text-(--color-muted)">
+          <Camera size={13} />
+          {(item.photos?.length ?? 0)} photo{(item.photos?.length ?? 0) !== 1 ? "s" : ""}
+        </div>
+      }
+    >
+      <div className="space-y-4">
+        <PhotoGallery photos={item.photos || []} orderId={orderId} />
+        <div className="border-t border-(--color-border) pt-3">
+          <p className="text-xs text-(--color-muted) mb-2 font-medium uppercase tracking-wide">
+            Upload New Photo
+          </p>
+          <PhotoUploader murtiItemId={item.id} orderId={orderId} />
+        </div>
+      </div>
+    </SectionCard>
   );
 }
 
@@ -74,13 +101,8 @@ export default function OrderDetailsPage() {
     try {
       setWhatsappLoading(true);
       const response = await api.get(`/orders/${id}/whatsapp-message`);
-
       const { customerPhone, message } = response.data.data;
-
-      // Generate WhatsApp URL
       const whatsappUrl = `https://wa.me/${customerPhone}?text=${encodeURIComponent(message)}`;
-
-      // Open WhatsApp
       window.open(whatsappUrl, "_blank");
       toast.success("Opening WhatsApp...");
     } catch (error) {
@@ -107,18 +129,15 @@ export default function OrderDetailsPage() {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
         <div className="text-center space-y-2">
-          <p className="text-(--color-danger) font-semibold">
-            Failed to load order
-          </p>
-          <p className="text-(--color-muted) text-sm">
-            Please try again later.
-          </p>
+          <p className="text-(--color-danger) font-semibold">Failed to load order</p>
+          <p className="text-(--color-muted) text-sm">Please try again later.</p>
         </div>
       </div>
     );
   }
 
-  const murti = order.murtiItems?.[0];
+  const murtiItems = order.murtiItems || [];
+  const firstMurti = murtiItems[0];
   const totalPrice = Number(order.totalPrice);
   const advancePaid = Number(order.advancePaid);
   const remainingAmount = totalPrice - advancePaid;
@@ -149,10 +168,10 @@ export default function OrderDetailsPage() {
                 </span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold text-(--color-primary) leading-tight">
-                {murti?.murtiName || "Unnamed Murti"}
+                {firstMurti?.murtiName || "Unnamed Murti"}
               </h1>
               <p className="text-(--color-muted) text-sm">
-                {murti?.murtiType} · Ordered on{" "}
+                {firstMurti?.murtiType} · Ordered on{" "}
                 {new Date(order.createdAt).toLocaleDateString("en-IN", {
                   day: "numeric",
                   month: "short",
@@ -165,10 +184,7 @@ export default function OrderDetailsPage() {
               <p className="text-xs text-(--color-muted) font-medium uppercase tracking-wide mb-1.5">
                 Update Status
               </p>
-              <UpdateStatusSelect
-                orderId={order.id}
-                currentStatus={order.status}
-              />
+              <UpdateStatusSelect orderId={order.id} currentStatus={order.status} />
             </div>
           </div>
         </div>
@@ -182,23 +198,17 @@ export default function OrderDetailsPage() {
           <SectionCard title="Murti Details">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="col-span-2 sm:col-span-2">
-                <InfoRow icon={Layers} label="Type" value={murti?.murtiType} />
+                <InfoRow icon={Layers} label="Type" value={firstMurti?.murtiType} />
               </div>
               <div className="col-span-2 sm:col-span-2">
                 <InfoRow
                   icon={Ruler}
                   label="Height"
-                  value={
-                    murti?.heightInches ? `${murti.heightInches} inches` : null
-                  }
+                  value={firstMurti?.heightInches ? `${firstMurti.heightInches} inches` : null}
                 />
               </div>
               <div className="col-span-2 sm:col-span-2">
-                <InfoRow
-                  icon={Layers}
-                  label="Clay Type"
-                  value={murti?.clayType}
-                />
+                <InfoRow icon={Layers} label="Clay Type" value={firstMurti?.clayType} />
               </div>
               <div className="col-span-2 sm:col-span-2">
                 <InfoRow
@@ -206,50 +216,46 @@ export default function OrderDetailsPage() {
                   label="Expected Delivery"
                   value={
                     order.expectedDelivery
-                      ? new Date(order.expectedDelivery).toLocaleDateString(
-                          "en-IN",
-                          {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          },
-                        )
+                      ? new Date(order.expectedDelivery).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })
                       : null
                   }
                 />
               </div>
             </div>
-            {murti?.specialInstructions && (
+            {firstMurti?.specialInstructions && (
               <div className="mt-5 bg-purple-50 border border-purple-100 rounded-xl p-4 flex items-start gap-3">
-                <FileText
-                  size={16}
-                  className="text-(--color-primary) mt-0.5 shrink-0"
-                />
+                <FileText size={16} className="text-(--color-primary) mt-0.5 shrink-0" />
                 <div>
                   <p className="text-sm font-semibold text-(--color-primary) mb-1">
                     Special Instructions
                   </p>
                   <p className="text-sm text-(--color-text) leading-relaxed">
-                    {murti.specialInstructions}
+                    {firstMurti.specialInstructions}
                   </p>
                 </div>
               </div>
             )}
           </SectionCard>
 
+          {/* Photo sections — one per murti item */}
+          {murtiItems.map((item) => (
+            <MurtiPhotoSection key={item.id} item={item} orderId={id} />
+          ))}
+
           {/* Notes */}
           {order.notes && (
             <SectionCard title="Order Notes">
-              <p className="text-sm text-(--color-text) leading-relaxed">
-                {order.notes}
-              </p>
+              <p className="text-sm text-(--color-text) leading-relaxed">{order.notes}</p>
             </SectionCard>
           )}
 
           {/* Payment */}
           <SectionCard title="Payment Summary">
             <div className="space-y-4">
-              {/* Progress bar */}
               <div>
                 <div className="flex justify-between text-xs text-(--color-muted) mb-1.5">
                   <span>Advance paid ({advancePercent}%)</span>
@@ -263,7 +269,6 @@ export default function OrderDetailsPage() {
                 </div>
               </div>
 
-              {/* Amounts */}
               <div className="grid grid-cols-3 gap-3 pt-1">
                 <div className="bg-gray-50 rounded-xl p-3 text-center">
                   <p className="text-xs text-(--color-muted) mb-1">Total</p>
@@ -298,41 +303,27 @@ export default function OrderDetailsPage() {
           <SectionCard title="Customer">
             <div className="space-y-4">
               <InfoRow icon={User} label="Name" value={order.customer.name} />
-              <InfoRow
-                icon={Phone}
-                label="Phone"
-                value={order.customer.phone}
-              />
+              <InfoRow icon={Phone} label="Phone" value={order.customer.phone} />
               {order.customer.address && (
-                <InfoRow
-                  icon={MapPin}
-                  label="Address"
-                  value={order.customer.address}
-                />
+                <InfoRow icon={MapPin} label="Address" value={order.customer.address} />
               )}
               <InfoRow
                 icon={Clock}
                 label="Customer Since"
-                value={new Date(order.customer.createdAt).toLocaleDateString(
-                  "en-IN",
-                  {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  },
-                )}
+                value={new Date(order.customer.createdAt).toLocaleDateString("en-IN", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })}
               />
 
-              {/* WhatsApp Button */}
               <button
                 onClick={handleSendWhatsApp}
                 disabled={whatsappLoading}
                 className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-linear-to-r from-[#25d366] to-[#20ba5a] text-white rounded-lg font-semibold text-sm hover:shadow-lg transition-all disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 <MessageCircle size={16} />
-                {whatsappLoading
-                  ? "Generating..."
-                  : "Send WhatsApp Confirmation"}
+                {whatsappLoading ? "Generating..." : "Send WhatsApp Confirmation"}
               </button>
             </div>
           </SectionCard>
@@ -355,14 +346,11 @@ export default function OrderDetailsPage() {
                 label="Expected Delivery"
                 value={
                   order.expectedDelivery
-                    ? new Date(order.expectedDelivery).toLocaleDateString(
-                        "en-IN",
-                        {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        },
-                      )
+                    ? new Date(order.expectedDelivery).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })
                     : null
                 }
               />
